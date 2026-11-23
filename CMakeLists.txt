@@ -15,6 +15,9 @@ add_executable(HyperGit main.cpp
         sha256.cpp
         cache_file.cpp
         cache_file.hpp
+        object_id.cpp
+        blob.cpp
+        object_store.cpp
 )
 target_link_libraries(HyperGit PRIVATE OpenSSL::Crypto)
 
@@ -30,10 +33,15 @@ add_executable(HyperGitTests
         cache_codec.cpp
         cache_file.cpp
         sha256.cpp
+        object_id.cpp
+        object_store.cpp
+        blob.cpp
         tests/binary_writer_test.cpp
         tests/binary_reader_test.cpp
         tests/cache_codec_test.cpp
         tests/cache_file_test.cpp
+        tests/blob_test.cpp
+        tests/object_store_test.cpp
         tests/sha256_test.cpp
 )
 

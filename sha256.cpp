@@ -37,7 +37,7 @@ std::optional<std::array<std::byte, 32>> hyper::sha256::calculate_sha256(const s
     return result;
 }
 
-std::string hyper::sha256::bytes_to_hex(const std::array<std::byte, 32>& bytes) {
+std::string hyper::sha256::bytes_to_hex(const std::span<const std::byte, 32> bytes) {
     std::string result{};
     result.reserve(64);
     for (const auto byte : bytes) {
@@ -48,7 +48,7 @@ std::string hyper::sha256::bytes_to_hex(const std::array<std::byte, 32>& bytes) 
     return result;
 }
 
-std::optional<std::array<std::byte, 32>> hyper::sha256::hex_to_bytes(const std::string& data) {
+std::optional<std::array<std::byte, 32>> hyper::sha256::hex_to_bytes(std::string_view data) {
     if (data.size() != 64) {
         return std::nullopt;
     }
