@@ -3,6 +3,7 @@
 #include <fstream>
 #include <limits>
 
+#include "compression.hpp"
 #include "object_id.hpp"
 #include "sha256.hpp"
 
@@ -26,7 +27,11 @@ std::optional<hyper::ObjectId> hyper::write_object(const fs::path& objects_root,
     if (!object_store_file.is_open()) {
         return std::nullopt;
     }
-    object_store_file.write(reinterpret_cast<const char*>(encoded_object.data()), static_cast<std::streamsize>(encoded_object.size()));
+    auto compressed = compression::compress(encoded_object);
+    if (!compressed.has_value()) {
+        return std::nullopt;
+    }
+    object_store_file.write(reinterpret_cast<const char*>(compressed.value().data()), static_cast<std::streamsize>(compressed.value().size()));
     if (!object_store_file) {
         return std::nullopt;
     }
@@ -53,21 +58,22 @@ std::optional<std::vector<std::byte>> hyper::read_object(const fs::path& objects
 
     std::vector<std::byte> encoded_object(file_size);
     if (file_size != 0) {
-        object_store_file.read(
-            reinterpret_cast<char*>(encoded_object.data()),
-            static_cast<std::streamsize>(file_size)
+        object_store_file.read(reinterpret_cast<char*>(encoded_object.data()), static_cast<std::streamsize>(file_size)
         );
     }
-    if (object_store_file.bad() ||
-        (file_size != 0 && object_store_file.gcount() != static_cast<std::streamsize>(file_size))) {
+    if (object_store_file.bad() || (file_size != 0 && object_store_file.gcount() != static_cast<std::streamsize>(file_size))) {
         return std::nullopt;
     }
-    auto sha256 = sha256::calculate_sha256(encoded_object);
+    auto decompressed = compression::decompress(encoded_object);
+    if (!decompressed.has_value()) {
+        return std::nullopt;
+    }
+    auto sha256 = sha256::calculate_sha256(decompressed.value());
     if (!sha256.has_value()) {
         return std::nullopt;
     }
     if (ObjectId::from_digest(sha256.value()) != object_id) {
         return std::nullopt;
     }
-    return encoded_object;
+    return decompressed.value();
 }

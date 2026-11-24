@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "compression.hpp"
 #include "object_id.hpp"
 
 namespace {
@@ -28,7 +29,7 @@ public:
         std::filesystem::remove_all(path_, ec);
     }
 
-    const std::filesystem::path& path() const {
+    [[nodiscard]] const std::filesystem::path& path() const {
         return path_;
     }
 
@@ -126,6 +127,34 @@ TEST(ObjectStoreTest, WritesAndReadsObject) {
     EXPECT_EQ(*actual, object);
 }
 
+TEST(ObjectStoreTest, StoresCompressedObjectBytesOnDisk) {
+    TemporaryObjectStore store;
+    const auto object = test_object();
+
+    const auto object_id = hyper::write_object(store.path(), object);
+
+    ASSERT_TRUE(object_id.has_value());
+    const auto object_path = hyper::object_store_path(store.path(), *object_id);
+    std::ifstream file(object_path, std::ios::binary);
+    ASSERT_TRUE(file.is_open());
+
+    const auto compressed_size = std::filesystem::file_size(object_path);
+    std::vector<std::byte> stored_bytes(compressed_size);
+    if (compressed_size != 0) {
+        file.read(
+            reinterpret_cast<char*>(stored_bytes.data()),
+            static_cast<std::streamsize>(compressed_size)
+        );
+    }
+    ASSERT_TRUE(file || file.eof());
+
+    EXPECT_NE(stored_bytes, object);
+
+    const auto decompressed = hyper::compression::decompress(stored_bytes);
+    ASSERT_TRUE(decompressed.has_value());
+    EXPECT_EQ(*decompressed, object);
+}
+
 TEST(ObjectStoreTest, ReadingMissingObjectFails) {
     TemporaryObjectStore store;
 
@@ -145,7 +174,7 @@ TEST(ObjectStoreTest, ReadingTamperedObjectFailsChecksumValidation) {
     std::fstream file(object_path, std::ios::binary | std::ios::in | std::ios::out);
     ASSERT_TRUE(file.is_open());
     file.seekp(0);
-    const char tampered_byte = 'x';
+    constexpr char tampered_byte = 'x';
     file.write(&tampered_byte, 1);
     ASSERT_TRUE(file);
     file.close();

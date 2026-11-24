@@ -29,7 +29,7 @@ public:
         std::filesystem::remove_all(path_, ec);
     }
 
-    const std::filesystem::path& path() const {
+    [[nodiscard]] const std::filesystem::path& path() const {
         return path_;
     }
 

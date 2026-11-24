@@ -16,12 +16,12 @@
 namespace {
 
 hyper::fs::path path_from_utf8(const std::string& value) {
-    return hyper::fs::path(
+    return hyper::fs::path{
         std::u8string(
             reinterpret_cast<const char8_t*>(value.data()),
             value.size()
         )
-    );
+    };
 }
 
 hyper::CacheHeader sample_header() {
@@ -44,7 +44,7 @@ std::vector<std::byte> bytes_of(const hyper::BinaryWriter& writer) {
     };
 }
 
-hyper::CacheEntry sample_entry(std::string name = "src/你好.txt") {
+hyper::CacheEntry sample_entry(const std::string& name = "src/你好.txt") {
     hyper::CacheEntry entry{};
     entry.modified_time_ns = -123456789012345678;
     entry.file_size = 0x0102030405060708ULL;

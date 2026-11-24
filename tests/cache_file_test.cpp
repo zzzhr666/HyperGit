@@ -13,12 +13,12 @@
 namespace {
 
 hyper::fs::path path_from_utf8(const std::string& value) {
-    return hyper::fs::path(
+    return hyper::fs::path{
         std::u8string(
             reinterpret_cast<const char8_t*>(value.data()),
             value.size()
         )
-    );
+    };
 }
 
 class TemporaryDirectory {
@@ -36,7 +36,7 @@ public:
         std::filesystem::remove_all(path_, error);
     }
 
-    const std::filesystem::path& path() const {
+    [[nodiscard]] const std::filesystem::path& path() const {
         return path_;
     }
 
@@ -44,7 +44,7 @@ private:
     std::filesystem::path path_;
 };
 
-hyper::CacheEntry sample_entry(std::string name) {
+hyper::CacheEntry sample_entry(const std::string& name) {
     hyper::CacheEntry entry{};
     entry.modified_time_ns = 2;
     entry.file_size = 3;
